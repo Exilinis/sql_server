@@ -65,16 +65,34 @@ passwords_options = {
   "/#{option}=\"#{safe_password}#{enclosing_escape}\""
 end.compact.join ' '
 
-package package_name do
-  source package_url
+
+remote_file "#{Chef::Config['file_cache_path']}\\SQL2008R2EXPR_x64_ENU.exe" do
   checksum package_checksum
+  source package_url
+end
+
+install_command = "#{Chef::Config['file_cache_path']}\\SQL2008R2EXPR_x64_ENU.exe"
+install_command << "/q /ConfigurationFile=#{config_file_path} #{passwords_options}"
+
+execute 'Install SQL server'
+  user node['sql_server']['server']['installer_user']
+  password node['sql_server']['server']['installer_password']
   timeout node['sql_server']['server']['installer_timeout']
-  installer_type :custom
-  options "/q /ConfigurationFile=#{config_file_path} #{passwords_options}"
-  action :install
+  command install_command
   notifies :request_reboot, 'reboot[sql server install]'
   returns [0, 42, 127, 3010]
 end
+
+#package package_name do
+#  source package_url
+#  checksum package_checksum
+#  timeout node['sql_server']['server']['installer_timeout']
+#  installer_type :custom
+#  options "/q /ConfigurationFile=#{config_file_path} #{passwords_options}"
+#  action :install
+#  notifies :request_reboot, 'reboot[sql server install]'
+#  returns [0, 42, 127, 3010]
+#end
 
 # SQL Server requires a reboot to complete your install
 reboot 'sql server install' do
